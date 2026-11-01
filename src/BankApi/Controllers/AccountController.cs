@@ -105,4 +105,38 @@ public class AccountsController : ControllerBase
         return NoContent();
     }
 
+    //POST: api/accounts/5/deposit (money$)
+    [HttpPost("{id}/deposit")]
+    public async Task<ActionResult<AccountDto>> Deposit(int id, TransactionRequestDto dto)
+    {
+        var account =await _context.Accounts.FindAsync(id);
+        if(account is null)
+        {
+            return NotFound();
+        }
+        account.Balance += dto.Amount;
+
+        await _context.SaveChangesAsync();
+        return Ok(account.ToDto());
+    }
+
+    //POST: api/accounts/5/withdraw
+    [HttpPost("{id}/withdraw")]
+    public async Task<ActionResult<AccountDto>> Withdraw(int id,TransactionRequestDto dto)
+    {
+        var account=await _context.Accounts.FindAsync(id);
+        if (account is null)
+        {
+            return NotFound();
+        }
+        if (dto.Amount > account.Balance)
+        {
+            return BadRequest("Insufficient funds.");
+        }
+        account.Balance-=dto.Amount;
+        await _context.SaveChangesAsync();
+        return Ok(account.ToDto());
+    }
+
 };
+
