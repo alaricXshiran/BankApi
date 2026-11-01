@@ -8,5 +8,5 @@ public class Account
     public AccountType Type { get; set; }
     public decimal Balance { get; set; }
     public DateTime CreatedAt { get; set; }
-
+    public List<Transaction> Transactions { get; set; } = new();
 }

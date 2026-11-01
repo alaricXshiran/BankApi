@@ -10,8 +10,26 @@ public class BankDbContext : DbContext
 
     }
     public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<Transaction> Transactions => Set<Transaction>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Transaction>(entity =>
+        {
+            entity.Property(t => t.Type)
+                .HasConversion<string>()
+                .HasMaxLength(20);
+
+            entity.Property(t => t.Amount)
+                .HasPrecision(18, 2);
+
+            entity.Property(t => t.BalanceAfter)
+                .HasPrecision(18, 2);
+
+            entity.HasOne(t => t.Account)
+                .WithMany(a => a.Transactions)
+                .HasForeignKey(t => t.AccountId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
         modelBuilder.Entity<Account>(entity =>
         {
             //rules for the account table
@@ -28,6 +46,8 @@ public class BankDbContext : DbContext
             .HasMaxLength(20);
             entity.Property(a => a.Balance)
             .HasPrecision(18, 2);
+            
+
 
             entity.HasData(
                 new Account
@@ -59,6 +79,8 @@ public class BankDbContext : DbContext
                 }
 
             );
-        });
+            
+        }
+        );
     }
 }
