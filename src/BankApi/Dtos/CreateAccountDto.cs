@@ -1,9 +1,20 @@
+using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography.X509Certificates;
 using BankApi.Models;
 namespace BankApi.Dtos;
+
 public class CreateAccountDto
 {
-    public string HolderName{get; set;}=string.Empty;
-    public AccountType Type {get; set;}
-    public decimal InitialDeposit{get; set;}
+    [Required(ErrorMessage = "holder name is Required.")]
+    [StringLength(100, MinimumLength = 2,
+        ErrorMessage = "holder name must be between 2 and 100 characters.")]
+    public string HolderName { get; set; } = string.Empty;
+
+    [EnumDataType(typeof(AccountType),
+        ErrorMessage = "Holder name must be between 2 and 100 characters.")]
+    public AccountType Type { get; set; }
+
+    [Range(1000, 10_000_000,
+        ErrorMessage = "Initial Deposit must be between LKR 1000 and LKR 10,000,000")]
+    public decimal InitialDeposit { get; set; }
 }
