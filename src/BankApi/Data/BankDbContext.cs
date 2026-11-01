@@ -1,0 +1,64 @@
+using BankApi.Models;
+using Microsoft.EntityFrameworkCore;
+namespace BankApi.Data;
+
+public class BankDbContext : DbContext
+{
+    public BankDbContext(DbContextOptions<BankDbContext> options)
+        : base(options)
+    {
+
+    }
+    public DbSet<Account> Accounts => Set<Account>();
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Account>(entity =>
+        {
+            //rules for the account table
+            entity.HasIndex(a => a.AccountNumber).IsUnique();
+
+            entity.Property(a => a.AccountNumber)
+            .IsRequired()
+            .HasMaxLength(20);
+            entity.Property(a => a.HolderName)
+            .IsRequired()
+            .HasMaxLength(100);
+            entity.Property(a => a.Type)
+            .HasConversion<string>()
+            .HasMaxLength(20);
+            entity.Property(a => a.Balance)
+            .HasPrecision(18, 2);
+
+            entity.HasData(
+                new Account
+                {
+                    Id = 1,
+                    AccountNumber = "ACC-100001",
+                    HolderName = "Alaric Shiran",
+                    Type = AccountType.Savings,
+                    Balance = 25000.00m,
+                    CreatedAt = new DateTime(2026, 1, 15, 9, 0, 0, DateTimeKind.Utc)
+                },
+                new Account
+                {
+                    Id = 2,
+                    AccountNumber = "ACC-100002",
+                    HolderName = "champika kumara",
+                    Type = AccountType.Current,
+                    Balance = 150000.00m,
+                    CreatedAt = new DateTime(2026, 2, 3, 10, 30, 0, DateTimeKind.Utc)
+                },
+                new Account
+                {
+                    Id = 3,
+                    AccountNumber = "ACC-100003",
+                    HolderName = "Anosh Mikon",
+                    Type = AccountType.Savings,
+                    Balance = 5250.75m,
+                    CreatedAt = new DateTime(2026, 3, 20, 14, 15, 0, DateTimeKind.Utc)
+                }
+
+            );
+        });
+    }
+}
