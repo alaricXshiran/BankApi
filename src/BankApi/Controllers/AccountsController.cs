@@ -50,6 +50,16 @@ public class AccountsController : ControllerBase
             Balance = dto.InitialDeposit,
             CreatedAt = DateTime.UtcNow
         };
+        if (dto.InitialDeposit > 0)
+        {
+            account.Transactions.Add(new Transaction
+            {
+                Type = TransactionType.Deposit,
+                Amount = dto.InitialDeposit,
+                BalanceAfter = dto.InitialDeposit,
+                CreatedAt = account.CreatedAt
+            });
+        }
         _context.Accounts.Add(account);
         await _context.SaveChangesAsync();
 
@@ -88,15 +98,15 @@ public class AccountsController : ControllerBase
 
     //Delete: api/account/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult>DeleteAccount(int id)
+    public async Task<IActionResult> DeleteAccount(int id)
     {
-        var account=await _context.Accounts.FindAsync(id);
-        if(account is null)
+        var account = await _context.Accounts.FindAsync(id);
+        if (account is null)
         {
             return NotFound();
 
         }
-        if(account.Balance>0)
+        if (account.Balance > 0)
         {
             return BadRequest("cannot close an account with balance remaining,Please withdraw the Funds(Balance) first. ");
         }
@@ -109,34 +119,55 @@ public class AccountsController : ControllerBase
     [HttpPost("{id}/deposit")]
     public async Task<ActionResult<AccountDto>> Deposit(int id, TransactionRequestDto dto)
     {
-        var account =await _context.Accounts.FindAsync(id);
-        if(account is null)
-        {
-            return NotFound();
-        }
-        account.Balance += dto.Amount;
-
-        await _context.SaveChangesAsync();
-        return Ok(account.ToDto());
-    }
-
-    //POST: api/accounts/5/withdraw
-    [HttpPost("{id}/withdraw")]
-    public async Task<ActionResult<AccountDto>> Withdraw(int id,TransactionRequestDto dto)
-    {
-        var account=await _context.Accounts.FindAsync(id);
+        var account = await _context.Accounts.FindAsync(id);
         if (account is null)
         {
             return NotFound();
         }
-        if (dto.Amount > account.Balance)
+        account.Balance += dto.Amount;
+        _context.Transactions.Add(new Transaction
         {
-            return BadRequest("Insufficient funds.");
-        }
-        account.Balance-=dto.Amount;
+            AccountId = account.Id,
+            Type = TransactionType.Deposit,
+            Amount = dto.Amount,
+            BalanceAfter = account.Balance,
+            CreatedAt = DateTime.UtcNow
+        });
+
         await _context.SaveChangesAsync();
         return Ok(account.ToDto());
     }
 
-};
+    // POST: api/accounts/5/withdraw
+    [HttpPost("{id}/withdraw")]
+    public async Task<ActionResult<AccountDto>> Withdraw(int id, TransactionRequestDto dto)
+    {
+        var account = await _context.Accounts.FindAsync(id);
+
+        if (account is null)
+        {
+            return NotFound();
+        }
+
+        if (dto.Amount > account.Balance)
+        {
+            return BadRequest("Insufficient funds.");
+        }
+
+        account.Balance -= dto.Amount;
+
+        _context.Transactions.Add(new Transaction
+        {
+            AccountId = account.Id,
+            Type = TransactionType.Withdrawal,
+            Amount = dto.Amount,
+            BalanceAfter = account.Balance,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
+
+        return Ok(account.ToDto());
+    }
+}
 
