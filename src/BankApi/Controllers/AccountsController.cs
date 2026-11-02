@@ -169,5 +169,21 @@ public class AccountsController : ControllerBase
 
         return Ok(account.ToDto());
     }
+
+    //GET:api/accounts/5/transactions
+    [HttpGet("{id}/transactions")]
+    public async Task<ActionResult<List<TransactionDto>>>GetTransactions(int id)
+    {
+        var accountExists=await _context.Accounts.AnyAsync(a=>a.Id==id);
+        if (!accountExists)
+        {
+            return NotFound();
+        }
+        var transactions=await _context.Transactions
+            .Where(t=>t.AccountId==id)
+            .OrderByDescending(t=>t.Id)
+            .ToListAsync();
+        return Ok(transactions.Select(t => t.ToDto()).ToList());
+    }
 }
 
