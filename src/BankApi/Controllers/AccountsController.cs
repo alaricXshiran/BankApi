@@ -114,7 +114,10 @@ public class AccountsController : ControllerBase
         }
         if (account.Balance > 0)
         {
-            return BadRequest("cannot close an account with balance remaining,Please withdraw the Funds(Balance) first. ");
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Account has a remaining balance.",
+                detail: "Withdraw all funds before closing the account.");
         }
         _context.Accounts.Remove(account);
         await _context.SaveChangesAsync();
@@ -157,7 +160,10 @@ public class AccountsController : ControllerBase
 
         if (dto.Amount > account.Balance)
         {
-            return BadRequest("Insufficient funds.");
+            return Problem(
+    statusCode: StatusCodes.Status400BadRequest,
+    title: "Insufficient funds.",
+    detail: "The withdrawal amount is greater than the account balance.");
         }
 
         account.Balance -= dto.Amount;
