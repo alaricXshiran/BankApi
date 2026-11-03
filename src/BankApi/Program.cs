@@ -9,6 +9,8 @@ using BankApi.Services;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -19,8 +21,35 @@ builder.Services.AddControllers()
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi(options =>
 {
-    options.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_0;
+    // Use OpenAPI 3.0, which Swagger UI reads correctly (see the Step 8 fix).
+    options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_0;
+
+    // Tell Swagger that this API uses JWT Bearer tokens,
+    // so it shows an "Authorize" button where we can paste a token.
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        // 1. Define the "Bearer" security scheme.
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "Log in with POST /api/Auth/login, then paste the token here."
+        };
+
+        // 2. Apply the scheme to the API, so Swagger sends the token with requests.
+        document.Security ??= [];
+        document.Security.Add(new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+        });
+
+        return Task.CompletedTask;
+    });
 });
+
 builder.Services.AddDbContext<BankDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("BankDb")));
 
@@ -126,6 +155,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "BankApi v1");
+        // Remember the pasted token when the Swagger page is refreshed.
+        options.EnablePersistAuthorization();
     });
 }
 
