@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using BankApi.ErrorHandling;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
+using BankApi.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -60,8 +60,23 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
+
+    // Strict limit for login attempts: 5 per minute, per IP address.
+    // This makes guessing passwords (brute-force attacks) far too slow to work.
+    options.AddPolicy("login", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
 });
+
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+// Creates JWTs at login.
+builder.Services.AddScoped<TokenService>();
 
 var app = builder.Build();
 app.UseExceptionHandler();
