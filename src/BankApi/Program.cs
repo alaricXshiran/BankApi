@@ -1,6 +1,7 @@
 using BankApi.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
+using BankApi.ErrorHandling;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -16,7 +17,13 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddDbContext<BankDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("BankDb")));
 
+
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 var app = builder.Build();
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

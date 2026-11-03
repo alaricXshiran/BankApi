@@ -32,7 +32,9 @@ public class AccountsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<AccountDto>> GetAccount(int id)
     {
+
         var account = await _context.Accounts.FindAsync(id);
+
         if (account is null)
         {
             return NotFound();
@@ -176,16 +178,16 @@ public class AccountsController : ControllerBase
 
     //GET:api/accounts/5/transactions
     [HttpGet("{id}/transactions")]
-    public async Task<ActionResult<List<TransactionDto>>>GetTransactions(int id)
+    public async Task<ActionResult<List<TransactionDto>>> GetTransactions(int id)
     {
-        var accountExists=await _context.Accounts.AnyAsync(a=>a.Id==id);
+        var accountExists = await _context.Accounts.AnyAsync(a => a.Id == id);
         if (!accountExists)
         {
             return NotFound();
         }
-        var transactions=await _context.Transactions
-            .Where(t=>t.AccountId==id)
-            .OrderByDescending(t=>t.Id)
+        var transactions = await _context.Transactions
+            .Where(t => t.AccountId == id)
+            .OrderByDescending(t => t.Id)
             .ToListAsync();
         return Ok(transactions.Select(t => t.ToDto()).ToList());
     }
