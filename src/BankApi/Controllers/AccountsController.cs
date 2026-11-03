@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BankApi.Models;
 using BankApi.Dto;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace BankApi.Controllers;
 
@@ -126,6 +127,7 @@ public class AccountsController : ControllerBase
 
     //POST: api/accounts/5/deposit (Add money$)
     [HttpPost("{id}/deposit")]
+    [EnableRateLimiting("money")]
     public async Task<ActionResult<AccountDto>> Deposit(int id, TransactionRequestDto dto)
     {
         var account = await _context.Accounts.FindAsync(id);
@@ -149,6 +151,7 @@ public class AccountsController : ControllerBase
 
     // POST: api/accounts/5/withdraw (take Money outside the Account)
     [HttpPost("{id}/withdraw")]
+    [EnableRateLimiting("money")]
     public async Task<ActionResult<AccountDto>> Withdraw(int id, TransactionRequestDto dto)
     {
         var account = await _context.Accounts.FindAsync(id);
