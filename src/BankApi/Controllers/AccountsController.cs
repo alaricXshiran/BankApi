@@ -19,12 +19,14 @@ public class AccountsController : ControllerBase
     }
 
     //GET: api/accounts
+    /*
     [HttpGet]
     public async Task<ActionResult<List<AccountDto>>> GetAccounts()
     {
         var accounts = await _context.Accounts.ToListAsync();
         return Ok(accounts.Select(a => a.ToDto()).ToList());
     }
+    */
 
     //Get:api/accounts/5
     [HttpGet("{id}")]
@@ -186,6 +188,48 @@ public class AccountsController : ControllerBase
             .OrderByDescending(t=>t.Id)
             .ToListAsync();
         return Ok(transactions.Select(t => t.ToDto()).ToList());
+    }
+    //Get: api/accounts?search=Alaric&type=Savings&pageSize=10
+    [HttpGet]
+    public async Task<ActionResult<PagedResult<AccountDto>>> GetAccounts(
+        [FromQuery] AccountQueryParameters query)
+    {
+        var accounts = _context.Accounts.AsQueryable();
+
+        // Search by name, account number or email
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var pattern = $"%{query.Search.Trim()}%";
+
+            accounts = accounts.Where(a =>
+                EF.Functions.Like(a.HolderName, pattern) ||
+                EF.Functions.Like(a.AccountNumber, pattern) ||
+                (a.Email != null && EF.Functions.Like(a.Email, pattern)));
+        }
+
+        // Filter by account type
+        if (query.Type is not null)
+        {
+            accounts = accounts.Where(a => a.Type == query.Type);
+        }
+
+        // Count all matching accounts (before paging)
+        var totalCount = await accounts.CountAsync();
+
+        // Get just one page
+        var items = await accounts
+            .OrderBy(a => a.Id)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .ToListAsync();
+
+        return Ok(new PagedResult<AccountDto>
+        {
+            Items = items.Select(a => a.ToDto()).ToList(),
+            Page = query.Page,
+            PageSize = query.PageSize,
+            TotalCount = totalCount
+        });
     }
 }
 
