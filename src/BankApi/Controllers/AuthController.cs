@@ -12,8 +12,7 @@ namespace BankApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 
-// Every endpoint in this controller requires a valid JWT (logged-in staff only).
-[Authorize]
+
 
 public class AuthController : ControllerBase
 {
