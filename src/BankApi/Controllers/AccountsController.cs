@@ -6,11 +6,15 @@ using Microsoft.EntityFrameworkCore;
 using BankApi.Models;
 using BankApi.Dto;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BankApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+// Every endpoint in this controller requires a valid JWT (logged-in staff only).
+[Authorize]
+
 public class AccountsController : ControllerBase
 {
     private readonly BankDbContext _context;

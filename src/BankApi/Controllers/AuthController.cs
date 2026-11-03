@@ -6,11 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BankApi.Services;
 using Microsoft.AspNetCore.RateLimiting;
-
+using Microsoft.AspNetCore.Authorization;
 namespace BankApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+
+// Every endpoint in this controller requires a valid JWT (logged-in staff only).
+[Authorize]
+
 public class AuthController : ControllerBase
 {
     private readonly BankDbContext _context;
@@ -29,6 +33,8 @@ public class AuthController : ControllerBase
     }
     // POST: api/auth/register
     [HttpPost("register")]
+    // Only logged-in staff can create new staff users
+    [Authorize]
     public async Task<ActionResult<UserDto>> Register(RegisterRequestDto dto)
     {
         var username = dto.Username.Trim().ToLowerInvariant();

@@ -6,6 +6,9 @@ using System.Text.Json.Serialization;
 using BankApi.ErrorHandling;
 using System.Threading.RateLimiting;
 using BankApi.Services;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -78,6 +81,40 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 // Creates JWTs at login.
 builder.Services.AddScoped<TokenService>();
 
+// Authentication: check the JWT sent with each request.
+// A token is only accepted if it was signed with our key, by our API,
+// for our API, and hasn't expired.
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var jwtKey = builder.Configuration["Jwt:Key"]
+            ?? throw new InvalidOperationException("JWT key is not configured.");
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            // Was it issued by us?
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+
+            // Is it meant for us?
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+
+            // Is the signature (the wax seal) genuine?
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+
+            // Has it expired? Allow only 1 minute of clock difference between servers.
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+    });
+
+// Authorization: decide what an authenticated user is allowed to do.
+builder.Services.AddAuthorization();
+
+
 var app = builder.Build();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
@@ -94,8 +131,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Read and validate the token first, so we know WHO is calling...
+app.UseAuthentication();
+
 app.UseRateLimiter();
 
+// ...then check WHAT they're allowed to do.
 app.UseAuthorization();
 
 app.MapControllers();
