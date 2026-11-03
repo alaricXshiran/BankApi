@@ -20,7 +20,17 @@ builder.Services.AddDbContext<BankDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("BankDb")));
 
 
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        if (context.ProblemDetails.Status == StatusCodes.Status429TooManyRequests)
+        {
+            context.ProblemDetails.Title = "Too many requests.";
+            context.ProblemDetails.Detail = "You have made too many requests. Please wait a moment and try again.";
+        }
+    };
+});
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddRateLimiter(options =>
