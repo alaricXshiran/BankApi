@@ -35,6 +35,10 @@ namespace BankApi.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(254)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("HolderName")
                         .IsRequired()
                         .HasMaxLength(100)

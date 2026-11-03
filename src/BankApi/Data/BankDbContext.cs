@@ -41,6 +41,8 @@ public class BankDbContext : DbContext
             entity.Property(a => a.HolderName)
             .IsRequired()
             .HasMaxLength(100);
+            entity.Property(a=>a.Email)
+                .HasMaxLength(254);
             entity.Property(a => a.Type)
             .HasConversion<string>()
             .HasMaxLength(20);

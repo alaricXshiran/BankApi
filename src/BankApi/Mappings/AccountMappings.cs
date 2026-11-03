@@ -10,6 +10,7 @@ public static class AccountMappings
             Id=account.Id,
             AccountNumber=account.AccountNumber,
             HolderName=account.HolderName,
+            Email = account.Email,
             Type=account.Type,
             Balance=account.Balance,
             CreatedAt=account.CreatedAt

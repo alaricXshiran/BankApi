@@ -10,6 +10,11 @@ public class CreateAccountDto
         ErrorMessage = "holder name must be between 2 and 100 characters.")]
     public string HolderName { get; set; } = string.Empty;
 
+    [EmailAddress(ErrorMessage = "Email address is not valid.")]
+    [StringLength(254,
+        ErrorMessage = "Email must be at most 254 characters.")]
+    public string? Email { get; set; }
+
     [EnumDataType(typeof(AccountType),
         ErrorMessage = "Holder name must be between 2 and 100 characters.")]
     public AccountType Type { get; set; }

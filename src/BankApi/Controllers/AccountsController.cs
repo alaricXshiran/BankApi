@@ -38,7 +38,7 @@ public class AccountsController : ControllerBase
         return Ok(account.ToDto());
     }
 
-    //POST:api/accounts
+    //POST:api/accounts  (Create Account)
     [HttpPost]
     public async Task<ActionResult<AccountDto>> CreateAccount(CreateAccountDto dto)
     {
@@ -46,6 +46,7 @@ public class AccountsController : ControllerBase
         {
             AccountNumber = await GenerateAccountNumberAsync(),
             HolderName = dto.HolderName,
+            Email = dto.Email?.Trim().ToLowerInvariant(),
             Type = dto.Type,
             Balance = dto.InitialDeposit,
             CreatedAt = DateTime.UtcNow
@@ -79,7 +80,7 @@ public class AccountsController : ControllerBase
         return $"ACC-{nextNumber}";
     }
 
-    //PUT: api/accounts/5
+    //PUT: api/accounts/5  (Update an Account)
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateAccount(int id, UpdateAccountDto dto)
     {
@@ -89,6 +90,7 @@ public class AccountsController : ControllerBase
             return NotFound();
         }
         account.HolderName = dto.holderName;
+        account.Email = dto.Email?.Trim().ToLowerInvariant();
         account.Type = dto.Type;
 
         await _context.SaveChangesAsync();
@@ -96,7 +98,7 @@ public class AccountsController : ControllerBase
     }
 
 
-    //Delete: api/account/5
+    //Delete: api/account/5 (Delete an Account with no Balance)
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAccount(int id)
     {
@@ -115,7 +117,7 @@ public class AccountsController : ControllerBase
         return NoContent();
     }
 
-    //POST: api/accounts/5/deposit (money$)
+    //POST: api/accounts/5/deposit (Add money$)
     [HttpPost("{id}/deposit")]
     public async Task<ActionResult<AccountDto>> Deposit(int id, TransactionRequestDto dto)
     {
@@ -138,7 +140,7 @@ public class AccountsController : ControllerBase
         return Ok(account.ToDto());
     }
 
-    // POST: api/accounts/5/withdraw
+    // POST: api/accounts/5/withdraw (take Money outside the Account)
     [HttpPost("{id}/withdraw")]
     public async Task<ActionResult<AccountDto>> Withdraw(int id, TransactionRequestDto dto)
     {
