@@ -1,3 +1,5 @@
+using BankApi.Models;
+using Microsoft.AspNetCore.Identity;
 using BankApi.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -59,6 +61,7 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 });
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 var app = builder.Build();
 app.UseExceptionHandler();
