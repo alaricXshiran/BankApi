@@ -11,8 +11,21 @@ public class BankDbContext : DbContext
     }
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<User> Users => Set<User>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+                modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(u => u.Username).IsUnique();
+
+            entity.Property(u => u.Username)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(u => u.PasswordHash)
+                .IsRequired();
+        });
+        
         modelBuilder.Entity<Transaction>(entity =>
         {
             entity.Property(t => t.Type)
@@ -41,14 +54,14 @@ public class BankDbContext : DbContext
             entity.Property(a => a.HolderName)
             .IsRequired()
             .HasMaxLength(100);
-            entity.Property(a=>a.Email)
+            entity.Property(a => a.Email)
                 .HasMaxLength(254);
             entity.Property(a => a.Type)
             .HasConversion<string>()
             .HasMaxLength(20);
             entity.Property(a => a.Balance)
             .HasPrecision(18, 2);
-            
+
 
 
             entity.HasData(
@@ -81,7 +94,7 @@ public class BankDbContext : DbContext
                 }
 
             );
-            
+
         }
         );
     }
