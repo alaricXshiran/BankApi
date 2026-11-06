@@ -61,7 +61,7 @@ public class AccountsControllerTests : IDisposable
 
         return account;
     }
-        [Fact]
+    [Fact]
     public async Task Deposit_IncreasesBalance_AndRecordsTransaction()
     {
         // Arrange: an account with 1,000.
@@ -143,5 +143,21 @@ public class AccountsControllerTests : IDisposable
         var problem = Assert.IsType<ObjectResult>(result);
         Assert.Equal(400, problem.StatusCode);
         Assert.NotNull(await _context.Accounts.FindAsync(account.Id));
+    }
+    [Fact]
+    public async Task Dates_AreReadBackFromTheDatabase_AsUtc()
+    {
+        // Arrange: save an account with a UTC creation time.
+        var account = await CreateAccountAsync(100m);
+
+        // Forget the copy EF Core is holding in memory, so the next query really reads from the database.
+        _context.ChangeTracker.Clear();
+
+        // Act: load the account fresh from the database.
+        var loaded = await _context.Accounts.FindAsync(account.Id);
+
+        // Assert: the date comes back labelled as UTC (so the JSON will end with "Z").
+        Assert.NotNull(loaded);
+        Assert.Equal(DateTimeKind.Utc, loaded.CreatedAt.Kind);
     }
 }

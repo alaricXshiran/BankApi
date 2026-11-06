@@ -12,6 +12,14 @@ public class BankDbContext : DbContext
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<User> Users => Set<User>();
+        // Model-wide rules, applied to every property of a given type.
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        // Every DateTime in every table is stored and read back as UTC.
+        configurationBuilder
+            .Properties<DateTime>()
+            .HaveConversion<UtcDateTimeConverter>();
+    }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
                 modelBuilder.Entity<User>(entity =>
