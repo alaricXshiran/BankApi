@@ -1,0 +1,16 @@
+# Keep build output, local data and tools out of the Docker build.
+
+# Build output (Docker builds its own fresh copy)
+**/bin/
+**/obj/
+
+# Local SQLite databases: never bake your test data into an image
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Git history, editor settings and tests aren't needed to run the API
+.git/
+.vs/
+.vscode/
+tests/
