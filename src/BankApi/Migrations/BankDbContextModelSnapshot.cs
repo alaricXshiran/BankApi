@@ -83,6 +83,15 @@ namespace BankApi.Migrations
                             CreatedAt = new DateTime(2026, 3, 20, 14, 15, 0, 0, DateTimeKind.Utc),
                             HolderName = "Anosh Mikon",
                             Type = "Savings"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            AccountNumber = "ACC-100004",
+                            Balance = 12500.00m,
+                            CreatedAt = new DateTime(2026, 4, 10, 9, 30, 0, 0, DateTimeKind.Utc),
+                            HolderName = "Nishel Silva",
+                            Type = "Savings"
                         });
                 });
 

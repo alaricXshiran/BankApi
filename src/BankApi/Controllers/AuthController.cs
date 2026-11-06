@@ -14,9 +14,11 @@ namespace BankApi.Controllers;
 
 
 
+// Login and staff registration. No [Authorize] on the class, so login stays open to everyone.
 public class AuthController : ControllerBase
 {
     private readonly BankDbContext _context;
+    // Hashes and checks passwords, so plain passwords are never stored.
     private readonly IPasswordHasher<User> _passwordHasher;
     // Creates the JWT after a successful login.
     private readonly TokenService _tokenService;
@@ -36,8 +38,10 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<ActionResult<UserDto>> Register(RegisterRequestDto dto)
     {
+        // Store usernames in lowercase, so "Alaric" and "alaric" can't both exist.
         var username = dto.Username.Trim().ToLowerInvariant();
 
+        // Checked here for a clear 409. The unique index in the database is the safety net.
         var usernameTaken = await _context.Users.AnyAsync(u => u.Username == username);
 
         if (usernameTaken)
@@ -54,11 +58,13 @@ public class AuthController : ControllerBase
             CreatedAt = DateTime.UtcNow
         };
 
+        // Save only the salted hash. The plain password is never stored.
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
+        // Send back the user without the password hash.
         var userDto = new UserDto
         {
             Id = user.Id,
@@ -97,7 +103,7 @@ public class AuthController : ControllerBase
     }
 
     // One shared response for every failed login.
-    
+    // Same message either way, so attackers can't tell which usernames exist.
     private ObjectResult InvalidLogin()
     {
         return Problem(

@@ -1,3 +1,7 @@
+// Program.cs: the starting point of BankApi.
+// Part 1 registers the services (tools) the app uses.
+// Part 2 builds the app and defines the request pipeline, the steps every request passes through.
+
 using BankApi.Models;
 using Microsoft.AspNetCore.Identity;
 using BankApi.Data;
@@ -13,11 +17,19 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// =====================================================================
+// PART 1: SERVICES
+// =====================================================================
 
+// ---------- Controllers and JSON ----------
+
+// Use controllers, and write enums as words in JSON ("Savings" instead of 0).
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+// ---------- OpenAPI description (used by Swagger UI) ----------
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi(options =>
 {
@@ -50,14 +62,22 @@ builder.Services.AddOpenApi(options =>
     });
 });
 
+// ---------- Database ----------
+
+// Register BankDbContext so controllers can ask for it (dependency injection).
+// The connection string comes from appsettings.json, or from an environment variable in Docker.
 builder.Services.AddDbContext<BankDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("BankDb")));
 
+// ---------- Error handling ----------
 
+// Return every error in the standard Problem Details format.
 builder.Services.AddProblemDetails(options =>
 {
+    // Adjust error responses in one central place before they're sent.
     options.CustomizeProblemDetails = context =>
     {
+        // .NET gives 429 no title by default, so add a clear message.
         if (context.ProblemDetails.Status == StatusCodes.Status429TooManyRequests)
         {
             context.ProblemDetails.Title = "Too many requests.";
@@ -65,10 +85,16 @@ builder.Services.AddProblemDetails(options =>
         }
     };
 });
+
+// Catch any unexpected error: log the full details, return a safe 500 to the caller.
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+// ---------- Rate limiting ----------
+
+// Limit how many requests each caller (IP address) can make, to block abuse and password guessing.
 builder.Services.AddRateLimiter(options =>
 {
+    // Rejected requests get 429 Too Many Requests.
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
     // General limit: 100 requests per minute, per IP address
@@ -106,7 +132,11 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+// ---------- Authentication and authorization ----------
+
+// Hashes passwords at registration and checks them at login (never stores plain passwords).
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+
 // Creates JWTs at login.
 builder.Services.AddScoped<TokenService>();
 
@@ -117,6 +147,7 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // The signing key comes from User Secrets locally, or an environment variable in Docker.
         var jwtKey = builder.Configuration["Jwt:Key"]
             ?? throw new InvalidOperationException("JWT key is not configured.");
 
@@ -143,17 +174,29 @@ builder.Services
 // Authorization: decide what an authenticated user is allowed to do.
 builder.Services.AddAuthorization();
 
+// =====================================================================
+// PART 2: BUILD THE APP AND THE REQUEST PIPELINE
+// The order below matters: every request passes through these steps from top to bottom.
+// =====================================================================
 
 var app = builder.Build();
+
 // Create or upgrade the database, and the first admin user, before handling any requests.
 await DatabaseInitializer.InitializeAsync(app);
+
+// First in the pipeline, so it can catch errors from every step after it.
 app.UseExceptionHandler();
+
+// Give empty error responses (like 401, 404 and 429) a Problem Details body.
 app.UseStatusCodePages();
 
-// Configure the HTTP request pipeline.
+// Swagger is only available in Development, so the public never sees the full list of endpoints.
 if (app.Environment.IsDevelopment())
 {
+    // Publish the API description at /openapi/v1.json.
     app.MapOpenApi();
+
+    // Serve the Swagger page at /swagger, built from that description.
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/openapi/v1.json", "BankApi v1");
@@ -162,16 +205,20 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// Send plain HTTP requests to HTTPS when an HTTPS address is available.
 app.UseHttpsRedirection();
 
 // Read and validate the token first, so we know WHO is calling...
 app.UseAuthentication();
 
+// Turn away callers who are over their limit, before they reach the controllers or the database.
 app.UseRateLimiter();
 
 // ...then check WHAT they're allowed to do.
 app.UseAuthorization();
 
+// Send each request to the matching controller method.
 app.MapControllers();
 
+// Start the app and wait for requests.
 app.Run();

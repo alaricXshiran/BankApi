@@ -17,6 +17,7 @@ namespace BankApi.Controllers;
 
 public class AccountsController : ControllerBase
 {
+    // The database, provided by dependency injection.
     private readonly BankDbContext _context;
     public AccountsController(BankDbContext context)
     {
@@ -40,6 +41,7 @@ public class AccountsController : ControllerBase
 
         var account = await _context.Accounts.FindAsync(id);
 
+        // 404 if no account has this id.
         if (account is null)
         {
             return NotFound();
@@ -51,6 +53,7 @@ public class AccountsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<AccountDto>> CreateAccount(CreateAccountDto dto)
     {
+        // The bank sets the account number, balance and date; the caller can't.
         var account = new Account
         {
             AccountNumber = await GenerateAccountNumberAsync(),
@@ -60,6 +63,7 @@ public class AccountsController : ControllerBase
             Balance = dto.InitialDeposit,
             CreatedAt = DateTime.UtcNow
         };
+        // Record the opening deposit as the account's first transaction.
         if (dto.InitialDeposit > 0)
         {
             account.Transactions.Add(new Transaction
@@ -73,9 +77,11 @@ public class AccountsController : ControllerBase
         _context.Accounts.Add(account);
         await _context.SaveChangesAsync();
 
+        // 201 Created, with a link to the new account.
         return CreatedAtAction(nameof(GetAccount), new { id = account.Id }, account.ToDto());
 
     }
+    // Next account number: the last one plus 1 (e.g. ACC-100003 -> ACC-100004).
     private async Task<string> GenerateAccountNumberAsync()
     {
         var lastAccount = await _context.Accounts
@@ -98,6 +104,7 @@ public class AccountsController : ControllerBase
         {
             return NotFound();
         }
+        // Only name, email and type can change. The balance never changes here.
         account.HolderName = dto.holderName;
         account.Email = dto.Email?.Trim().ToLowerInvariant();
         account.Type = dto.Type;
@@ -117,6 +124,7 @@ public class AccountsController : ControllerBase
             return NotFound();
 
         }
+        // Never close an account that still has money in it.
         if (account.Balance > 0)
         {
             return Problem(
@@ -139,6 +147,7 @@ public class AccountsController : ControllerBase
         {
             return NotFound();
         }
+        // The new balance and the transaction record are saved together (all or nothing).
         account.Balance += dto.Amount;
         _context.Transactions.Add(new Transaction
         {
@@ -165,6 +174,7 @@ public class AccountsController : ControllerBase
             return NotFound();
         }
 
+        // Can't withdraw more than the balance. Checked before anything changes.
         if (dto.Amount > account.Balance)
         {
             return Problem(
@@ -175,6 +185,7 @@ public class AccountsController : ControllerBase
 
         account.Balance -= dto.Amount;
 
+        // Saved together with the new balance (all or nothing).
         _context.Transactions.Add(new Transaction
         {
             AccountId = account.Id,
@@ -193,11 +204,13 @@ public class AccountsController : ControllerBase
     [HttpGet("{id}/transactions")]
     public async Task<ActionResult<List<TransactionDto>>> GetTransactions(int id)
     {
+        // 404 for a missing account, so it isn't mistaken for an empty history.
         var accountExists = await _context.Accounts.AnyAsync(a => a.Id == id);
         if (!accountExists)
         {
             return NotFound();
         }
+        // Newest first, like a bank statement.
         var transactions = await _context.Transactions
             .Where(t => t.AccountId == id)
             .OrderByDescending(t => t.Id)
@@ -247,4 +260,3 @@ public class AccountsController : ControllerBase
         });
     }
 }
-
