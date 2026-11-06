@@ -487,3 +487,6 @@ $RECYCLE.BIN/
 *.db-wal
 # Local database backups
 *.db.backup
+
+# Docker Compose secrets: never commit these
+.env

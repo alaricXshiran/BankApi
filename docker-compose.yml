@@ -1,0 +1,33 @@
+# Runs BankApi in a container with one command: docker compose up
+services:
+  bankapi:
+    # Build the image from the Dockerfile in this folder.
+    build: .
+    image: bankapi
+    container_name: bankapi
+
+    # Port on your computer : port inside the container.
+    ports:
+      - "8080:8080"
+
+    # Settings passed into the app. A double underscore (__) means ":" in .NET,
+    # so Jwt__Key is read by the app as Jwt:Key.
+    environment:
+      # Development turns on Swagger. A real production server would NOT do this.
+      ASPNETCORE_ENVIRONMENT: Development
+
+      # Store the database in /app/data, which is backed by the volume below.
+      ConnectionStrings__BankDb: "Data Source=/app/data/bank.db"
+
+      # Secrets come from the .env file. ":?" stops with an error if one is missing.
+      Jwt__Key: ${JWT_KEY:?Set JWT_KEY in the .env file}
+      Admin__Username: ${ADMIN_USERNAME:-admin}
+      Admin__Password: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in the .env file}
+
+    # Keep the database in a named volume, so data survives restarts and rebuilds.
+    volumes:
+      - bankapi-data:/app/data
+
+# Named volumes managed by Docker.
+volumes:
+  bankapi-data:
