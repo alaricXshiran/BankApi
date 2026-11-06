@@ -145,6 +145,8 @@ builder.Services.AddAuthorization();
 
 
 var app = builder.Build();
+// Create or upgrade the database, and the first admin user, before handling any requests.
+await DatabaseInitializer.InitializeAsync(app);
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
